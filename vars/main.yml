@@ -1,0 +1,15 @@
+#
+# Vars
+#
+# Definitions in this file are expected to remain constant and
+# aren't intended to be overidden in the playbook. If you find
+# yourself needing to override these definitions, consider if
+# the value needs to be changed or if the definitions is better
+# suited for placement in the defaults file. 
+#
+---
+go_tarball: 'go{{ go_version }}.linux-amd64.tar.gz'
+go_download_url: 'https://storage.googleapis.com/golang/{{ go_tarball }}'
+go_download_dir: '/usr/local/src/{{ go_tarball }}'
+go_install_dir: '/usr/local/go'
+go_binary_path: '/usr/local/go/bin/go'

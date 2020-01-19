@@ -1,0 +1,69 @@
+#
+---
+- name: 'Check if Go is installed'
+  stat:
+    path: '{{ go_binary_path }}'
+  register: go_present
+
+
+- name: 'Register the current Go version (if any)'
+  command: '{{ go_binary_path }} version'
+  ignore_errors: yes
+  register: go_version_check
+  changed_when: False
+  when: go_present.stat.exists
+
+
+# Block for when installing go
+- block:
+
+
+  - name: 'Download the Go tarball'
+    get_url:
+      url: '{{ go_download_url }}'
+      dest: '{{ go_download_dir }}'
+
+
+  - name: 'Remove old installation of Go'
+    file:
+      path: '{{ go_install_dir }}'
+      state: absent
+
+
+  - name: 'Extract the Go tarball if Go is not yet installed or not the desired version'
+    unarchive:
+      src: '{{ go_download_dir }}'
+      dest: '/usr/local'
+      copy: False
+
+
+  - name: 'Set GOPATH and add Go binary to path'
+    become: True
+    lineinfile:
+      path: '/etc/profile.d/profile.sh'
+      create: True
+      insertafter: EOF
+      line: '{{ item }}'
+    loop:
+      - 'export GOPATH=$HOME/go'
+      - 'export PATH=$PATH:$GOPATH/bin:/usr/local/go/bin'
+
+
+  when: (not go_present.stat.exists) or
+        (go_version|string not in go_version_check.stdout|default(""))
+
+
+- name: 'Check if go is target version' 
+  command: '{{ go_binary_path }} version'
+  changed_when: False
+  register: go_version_check
+
+
+- fail:
+    msg: 'Go {{ go_version }} is missing. Aborting role'
+  when: 'go_version|string not in go_version_check.stdout|default("")'
+
+
+- debug:
+   msg: 'Go {{ go_version }} is installed'
+  when: 'go_version|string in go_version_check.stdout|default("")'
